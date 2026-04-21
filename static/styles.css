@@ -172,6 +172,28 @@ summary {
   margin-bottom: 8px;
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+.badge.ok {
+  border-color: rgba(47, 125, 76, 0.35);
+  color: var(--accent-dark);
+}
+
+.badge.warn {
+  border-color: rgba(167, 92, 0, 0.35);
+  color: #8b4a00;
+}
+
 @media (max-width: 920px) {
   .grid,
   .packet-grid {
