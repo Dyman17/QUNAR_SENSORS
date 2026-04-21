@@ -190,6 +190,10 @@ def receive_esp_packet(raw_packet: dict[str, Any]):
         state.last_received_at = utc_now_iso()
         relay1_command = state.relay1_command
         relay2_command = state.relay2_command
+        # One-shot semantics for pump: if UI sets relay1_command=0, return it once,
+        # then reset back to 1 so ESP doesn't retrigger pump every cycle.
+        if relay1_command == 0:
+            state.relay1_command = 1
 
     return JSONResponse(
         {
