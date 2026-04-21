@@ -38,6 +38,7 @@
       const receivedAt = data.last_received_at || null;
       const packet = data.packet || null;
       const normalized = data.normalized_fields || null;
+      const computed = data.computed || null;
 
       if (!packet) {
         setText("has-packet", "No packet received yet.");
@@ -71,6 +72,11 @@
       setText("v-uptime", fmt(packet.uptime_sec));
       setText("v-fw", fmt(packet.firmware_version));
 
+      if (computed && computed.relay_state) {
+        setText("cmd-r1", fmt(computed.relay_state.relay1_command));
+        setText("cmd-r2", fmt(computed.relay_state.relay2_command));
+      }
+
       if (normalized) {
         const pre = byId("normalized-json");
         if (pre) pre.textContent = JSON.stringify(normalized, null, 2);
@@ -86,4 +92,3 @@
     setInterval(poll, POLL_MS);
   });
 })();
-

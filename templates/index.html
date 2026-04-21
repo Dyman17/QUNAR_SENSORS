@@ -22,23 +22,53 @@
 
       <section class="grid">
         <article class="card">
-          <h2>Relay Commands</h2>
-          <p class="muted">These values are returned to ESP in every response.</p>
-          <p class="muted"><strong>Relay 1:</strong> persistent command. It will stay the same until you change it here.</p>
+          <h2>Control</h2>
+          <p class="muted">Manual returns your fixed command. Auto computes command from the latest ESP packet.</p>
           <form method="post" action="/commands" class="form">
             <label>
-              <span>Relay 1 command</span>
-              <select name="relay1_command">
-                <option value="0" {% if relay_state.relay1_command == 0 %}selected{% endif %}>0</option>
-                <option value="1" {% if relay_state.relay1_command == 1 %}selected{% endif %}>1</option>
+              <span>Pump mode (Relay 1)</span>
+              <select name="relay1_mode">
+                <option value="manual" {% if control.relay1_mode == "manual" %}selected{% endif %}>manual</option>
+                <option value="auto" {% if control.relay1_mode == "auto" %}selected{% endif %}>auto</option>
               </select>
             </label>
             <label>
-              <span>Relay 2 command</span>
-              <select name="relay2_command">
-                <option value="0" {% if relay_state.relay2_command == 0 %}selected{% endif %}>0</option>
-                <option value="1" {% if relay_state.relay2_command == 1 %}selected{% endif %}>1</option>
+              <span>Pump manual command</span>
+              <select name="relay1_manual_command">
+                <option value="0" {% if control.relay1_manual_command == 0 %}selected{% endif %}>0</option>
+                <option value="1" {% if control.relay1_manual_command == 1 %}selected{% endif %}>1</option>
               </select>
+            </label>
+            <label>
+              <span>Auto pump: ON below (soil %)</span>
+              <input type="number" step="0.1" min="0" max="100" name="pump_on_below" value="{{ control.pump_on_below }}" />
+            </label>
+            <label>
+              <span>Auto pump: OFF above (soil %)</span>
+              <input type="number" step="0.1" min="0" max="100" name="pump_off_above" value="{{ control.pump_off_above }}" />
+            </label>
+            <label>
+              <span>Auto pump: max ON (sec)</span>
+              <input type="number" step="1" min="5" max="3600" name="pump_max_on_sec" value="{{ control.pump_max_on_sec }}" />
+            </label>
+            <hr />
+            <label>
+              <span>Lamp mode (Relay 2)</span>
+              <select name="relay2_mode">
+                <option value="manual" {% if control.relay2_mode == "manual" %}selected{% endif %}>manual</option>
+                <option value="auto" {% if control.relay2_mode == "auto" %}selected{% endif %}>auto</option>
+              </select>
+            </label>
+            <label>
+              <span>Lamp manual command</span>
+              <select name="relay2_manual_command">
+                <option value="0" {% if control.relay2_manual_command == 0 %}selected{% endif %}>0</option>
+                <option value="1" {% if control.relay2_manual_command == 1 %}selected{% endif %}>1</option>
+              </select>
+            </label>
+            <label class="row">
+              <input type="checkbox" name="lamp_on_when_dark" value="1" {% if control.lamp_on_when_dark %}checked{% endif %} />
+              <span>Lamp auto: ON when dark (light=0)</span>
             </label>
             <button type="submit">Save commands</button>
           </form>
@@ -52,6 +82,10 @@
           <div class="badge-row">
             <span id="status-badge" class="badge warn">Offline</span>
             <span id="status-ago" class="muted">(--) </span>
+          </div>
+          <div class="muted">
+            <span class="label">Pump cmd</span> <span id="cmd-r1">--</span>
+            <span class="label">Lamp cmd</span> <span id="cmd-r2">--</span>
           </div>
           <p id="has-packet" class="muted">No packet received yet.</p>
         </article>
