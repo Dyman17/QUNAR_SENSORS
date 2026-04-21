@@ -256,6 +256,8 @@ def update_commands_form(
 
     with state.lock:
         state.control = config
+        relay_state, meta = compute_commands(state.last_packet)
+        state.last_computed = {"relay_state": relay_state.model_dump(), **meta}
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -263,6 +265,8 @@ def update_commands_form(
 def update_commands_api(config: ControlConfig):
     with state.lock:
         state.control = config
+        relay_state, meta = compute_commands(state.last_packet)
+        state.last_computed = {"relay_state": relay_state.model_dump(), **meta}
     return {"saved": True, **config.model_dump()}
 
 
