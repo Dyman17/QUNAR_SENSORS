@@ -71,6 +71,12 @@ You can deploy this folder as a separate Render web service.
 
 Or use the included `render.yaml`.
 
+Render Python version note:
+
+- Render's default Python version can be newer than FastAPI/Pydantic wheels support.
+- This repo pins Python with `.python-version` to `3.11.11`.
+- If needed, you can also set Render env var `PYTHON_VERSION=3.11.11`.
+
 ## Notes
 
 - No database is used.
