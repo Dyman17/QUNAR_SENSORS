@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP Packet Receiver</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Render Test Receiver</p>
+          <h1>Live ESP Dashboard</h1>
+          <p class="lead">
+            This mini-site only keeps the current ESP packet in memory. No database, no history, just the latest state
+            and relay commands.
+          </p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Relay Commands</h2>
+          <p class="muted">These values are returned to ESP in every response.</p>
+          <form method="post" action="/commands" class="form">
+            <label>
+              <span>Relay 1 command</span>
+              <select name="relay1_command">
+                <option value="0" {% if relay_state.relay1_command == 0 %}selected{% endif %}>0</option>
+                <option value="1" {% if relay_state.relay1_command == 1 %}selected{% endif %}>1</option>
+              </select>
+            </label>
+            <label>
+              <span>Relay 2 command</span>
+              <select name="relay2_command">
+                <option value="0" {% if relay_state.relay2_command == 0 %}selected{% endif %}>0</option>
+                <option value="1" {% if relay_state.relay2_command == 1 %}selected{% endif %}>1</option>
+              </select>
+            </label>
+            <button type="submit">Save commands</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>ESP Endpoint</h2>
+          <p class="muted">Point your device here:</p>
+          <pre>{{ api_url }}</pre>
+          <p class="muted">Server keeps only the latest packet in memory.</p>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div>
+            <h2>Current Dashboard State</h2>
+            <p class="muted">Latest packet only.</p>
+          </div>
+        </div>
+
+        {% if last_packet %}
+        <div class="packet">
+          <div class="packet-head">
+            <div>
+              <strong>Device {{ last_packet.device_id }}</strong>
+            </div>
+            <div class="muted">{{ last_received_at }}</div>
+          </div>
+
+          <div class="packet-grid">
+            <div><span class="label">Token</span><span>{{ last_packet.device_token }}</span></div>
+            <div><span class="label">T1</span><span>{{ last_packet.temperature1 or "--" }}</span></div>
+            <div><span class="label">H1</span><span>{{ last_packet.humidity1 or "--" }}</span></div>
+            <div><span class="label">T2</span><span>{{ last_packet.temperature2 or "--" }}</span></div>
+            <div><span class="label">H2</span><span>{{ last_packet.humidity2 or "--" }}</span></div>
+            <div><span class="label">Soil</span><span>{{ last_packet.soil or "--" }}</span></div>
+            <div><span class="label">Light 1</span><span>{{ last_packet.light1 or "--" }}</span></div>
+            <div><span class="label">Light 2</span><span>{{ last_packet.light2 or "--" }}</span></div>
+            <div><span class="label">Relay 1 state</span><span>{{ last_packet.relay1_state or "--" }}</span></div>
+            <div><span class="label">Relay 2 state</span><span>{{ last_packet.relay2_state or "--" }}</span></div>
+            <div><span class="label">RSSI</span><span>{{ last_packet.wifi_rssi or "--" }}</span></div>
+            <div><span class="label">Heap</span><span>{{ last_packet.free_heap or "--" }}</span></div>
+            <div><span class="label">Uptime</span><span>{{ last_packet.uptime_sec or "--" }}</span></div>
+            <div><span class="label">Firmware</span><span>{{ last_packet.firmware_version or "--" }}</span></div>
+          </div>
+
+          <details>
+            <summary>Normalized JSON</summary>
+            <pre>{{ last_normalized }}</pre>
+          </details>
+        </div>
+        {% else %}
+        <p class="muted">No packet received yet.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
