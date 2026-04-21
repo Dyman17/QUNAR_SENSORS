@@ -20,6 +20,14 @@
     return `${Math.floor(seconds / 3600)}h ago`;
   };
 
+  const fmtCmd = (v) => {
+    if (v === null || v === undefined) return "--";
+    const n = Number(v);
+    if (n === 1) return "ON (1)";
+    if (n === 0) return "OFF (0)";
+    return String(v);
+  };
+
   const setStatus = (online, seconds) => {
     const badge = byId("status-badge");
     if (!badge) return;
@@ -73,8 +81,8 @@
       setText("v-fw", fmt(packet.firmware_version));
 
       if (computed && computed.relay_state) {
-        setText("cmd-r1", fmt(computed.relay_state.relay1_command));
-        setText("cmd-r2", fmt(computed.relay_state.relay2_command));
+        setText("cmd-r1", fmtCmd(computed.relay_state.relay1_command));
+        setText("cmd-r2", fmtCmd(computed.relay_state.relay2_command));
       }
 
       if (normalized) {

@@ -24,19 +24,23 @@
         <article class="card">
           <h2>Control</h2>
           <p class="muted">Manual returns your fixed command. Auto computes command from the latest ESP packet.</p>
+          <div class="hint">
+            <div><strong>Command meaning:</strong> <span class="chip">ON = 1</span> <span class="chip">OFF = 0</span></div>
+            <div class="muted small">ESP applies these on the next POST to <code>/api/esp</code>.</div>
+          </div>
           <form method="post" action="/commands" class="form">
             <label>
               <span>Pump mode (Relay 1)</span>
               <select name="relay1_mode">
-                <option value="manual" {% if control.relay1_mode == "manual" %}selected{% endif %}>manual</option>
-                <option value="auto" {% if control.relay1_mode == "auto" %}selected{% endif %}>auto</option>
+                <option value="manual" {% if control.relay1_mode == "manual" %}selected{% endif %}>Manual (use the switch below)</option>
+                <option value="auto" {% if control.relay1_mode == "auto" %}selected{% endif %}>Auto (by soil %)</option>
               </select>
             </label>
             <label>
               <span>Pump manual command</span>
               <select name="relay1_manual_command">
-                <option value="0" {% if control.relay1_manual_command == 0 %}selected{% endif %}>0</option>
-                <option value="1" {% if control.relay1_manual_command == 1 %}selected{% endif %}>1</option>
+                <option value="0" {% if control.relay1_manual_command == 0 %}selected{% endif %}>OFF (0)</option>
+                <option value="1" {% if control.relay1_manual_command == 1 %}selected{% endif %}>ON (1)</option>
               </select>
             </label>
             <label>
@@ -55,15 +59,15 @@
             <label>
               <span>Lamp mode (Relay 2)</span>
               <select name="relay2_mode">
-                <option value="manual" {% if control.relay2_mode == "manual" %}selected{% endif %}>manual</option>
-                <option value="auto" {% if control.relay2_mode == "auto" %}selected{% endif %}>auto</option>
+                <option value="manual" {% if control.relay2_mode == "manual" %}selected{% endif %}>Manual (use the switch below)</option>
+                <option value="auto" {% if control.relay2_mode == "auto" %}selected{% endif %}>Auto (by light sensors)</option>
               </select>
             </label>
             <label>
               <span>Lamp manual command</span>
               <select name="relay2_manual_command">
-                <option value="0" {% if control.relay2_manual_command == 0 %}selected{% endif %}>0</option>
-                <option value="1" {% if control.relay2_manual_command == 1 %}selected{% endif %}>1</option>
+                <option value="0" {% if control.relay2_manual_command == 0 %}selected{% endif %}>OFF (0)</option>
+                <option value="1" {% if control.relay2_manual_command == 1 %}selected{% endif %}>ON (1)</option>
               </select>
             </label>
             <label class="row">

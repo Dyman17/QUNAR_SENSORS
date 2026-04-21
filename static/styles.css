@@ -66,6 +66,30 @@ h2 {
   color: var(--muted);
 }
 
+.small {
+  font-size: 12px;
+}
+
+.hint {
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: #fffdf8;
+  margin-bottom: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
