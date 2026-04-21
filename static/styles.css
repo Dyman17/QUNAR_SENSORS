@@ -192,6 +192,24 @@ pre {
   margin-bottom: 14px;
 }
 
+.received {
+  display: grid;
+  gap: 6px;
+  text-align: right;
+}
+
+.received > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.received .label {
+  display: inline;
+  margin: 0;
+}
+
 .packet-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

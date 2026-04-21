@@ -1,5 +1,7 @@
 (() => {
   const POLL_MS = 2000;
+  const TIME_ZONE = "Asia/Qyzylorda"; // UTC+5
+  const LOCALE = "ru-RU";
 
   const byId = (id) => document.getElementById(id);
   const setText = (id, value) => {
@@ -15,9 +17,39 @@
 
   const fmtAgo = (seconds) => {
     if (seconds === null || seconds === undefined) return "--";
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 60) return `${seconds} сек назад`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} мин назад`;
+    return `${Math.floor(seconds / 3600)} ч назад`;
+  };
+
+  const splitDateTime = (iso) => {
+    if (!iso) return { date: "--", time: "--" };
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return { date: "--", time: "--" };
+
+    try {
+      const date = new Intl.DateTimeFormat(LOCALE, {
+        timeZone: TIME_ZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(d);
+      const time = new Intl.DateTimeFormat(LOCALE, {
+        timeZone: TIME_ZONE,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(d);
+      return { date, time };
+    } catch {
+      // Fallback: apply +5 hours manually to UTC.
+      const plus5 = new Date(d.getTime() + 5 * 60 * 60 * 1000);
+      const pad = (n) => String(n).padStart(2, "0");
+      const date = `${pad(plus5.getUTCDate())}.${pad(plus5.getUTCMonth() + 1)}.${plus5.getUTCFullYear()}`;
+      const time = `${pad(plus5.getUTCHours())}:${pad(plus5.getUTCMinutes())}:${pad(plus5.getUTCSeconds())}`;
+      return { date, time };
+    }
   };
 
   const fmtCmd = (v) => {
@@ -31,7 +63,7 @@
   const setStatus = (online, seconds) => {
     const badge = byId("status-badge");
     if (!badge) return;
-    badge.textContent = online ? "Online" : "Offline";
+    badge.textContent = online ? "Онлайн" : "Оффлайн";
     badge.classList.toggle("ok", Boolean(online));
     badge.classList.toggle("warn", !online);
     setText("status-ago", `(${fmtAgo(seconds)})`);
@@ -49,13 +81,16 @@
       const computed = data.computed || null;
 
       if (!packet) {
-        setText("has-packet", "No packet received yet.");
+        setText("has-packet", "Пакеты ещё не приходили.");
         setStatus(false, null);
         return;
       }
 
-      setText("has-packet", "Receiving packets.");
+      setText("has-packet", "Пакеты приходят.");
       setText("received-at", fmt(receivedAt));
+      const dt = splitDateTime(receivedAt);
+      setText("received-date", dt.date);
+      setText("received-time", dt.time);
 
       const now = Date.now();
       const last = receivedAt ? Date.parse(receivedAt) : NaN;
@@ -90,7 +125,7 @@
         if (pre) pre.textContent = JSON.stringify(normalized, null, 2);
       }
     } catch (e) {
-      setText("has-packet", "Polling error. Check service logs.");
+      setText("has-packet", "Ошибка обновления. Проверь логи Render.");
       setStatus(false, null);
     }
   }

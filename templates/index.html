@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ESP Packet Receiver</title>
+    <title>QUNAR Sensors Receiver</title>
     <link rel="stylesheet" href="/static/styles.css" />
     <script defer src="/static/app.js"></script>
   </head>
@@ -11,87 +11,87 @@
     <main class="page">
       <section class="hero">
         <div>
-          <p class="eyebrow">Render Test Receiver</p>
+          <p class="eyebrow">Render: mini receiver</p>
           <h1>Live ESP Dashboard</h1>
           <p class="lead">
-            This mini-site only keeps the current ESP packet in memory. No database, no history, just the latest state
-            and relay commands.
+            Этот мини-сайт хранит только последний JSON-пакет от ESP в памяти (без БД и истории) и отдаёт команды для реле
+            в ответ на следующий POST.
           </p>
         </div>
       </section>
 
       <section class="grid">
         <article class="card">
-          <h2>Control</h2>
-          <p class="muted">Manual returns your fixed command. Auto computes command from the latest ESP packet.</p>
+          <h2>Управление</h2>
+          <p class="muted">Реле 1 = насос. Реле 2 = лампа.</p>
           <div class="hint">
-            <div><strong>Command meaning:</strong> <span class="chip">ON = 1</span> <span class="chip">OFF = 0</span></div>
-            <div class="muted small">ESP applies these on the next POST to <code>/api/esp</code>.</div>
+            <div><strong>Значение команды:</strong> <span class="chip">ВКЛ = 1</span> <span class="chip">ВЫКЛ = 0</span></div>
+            <div class="muted small">ESP применяет команды при следующем POST на <code>/api/esp</code>.</div>
           </div>
           <form method="post" action="/commands" class="form">
             <label>
-              <span>Pump mode (Relay 1)</span>
+              <span>Насос (Реле 1): режим</span>
               <select name="relay1_mode">
-                <option value="manual" {% if control.relay1_mode == "manual" %}selected{% endif %}>Manual (use the switch below)</option>
-                <option value="auto" {% if control.relay1_mode == "auto" %}selected{% endif %}>Auto (by soil %)</option>
+                <option value="manual" {% if control.relay1_mode == "manual" %}selected{% endif %}>Ручной (команда ниже)</option>
+                <option value="auto" {% if control.relay1_mode == "auto" %}selected{% endif %}>Авто (по влажности почвы)</option>
               </select>
             </label>
             <label>
-              <span>Pump manual command</span>
+              <span>Насос (Реле 1): команда (ручной режим)</span>
               <select name="relay1_manual_command">
-                <option value="0" {% if control.relay1_manual_command == 0 %}selected{% endif %}>OFF (0)</option>
-                <option value="1" {% if control.relay1_manual_command == 1 %}selected{% endif %}>ON (1)</option>
+                <option value="0" {% if control.relay1_manual_command == 0 %}selected{% endif %}>ВЫКЛ (0)</option>
+                <option value="1" {% if control.relay1_manual_command == 1 %}selected{% endif %}>ВКЛ (1)</option>
               </select>
             </label>
             <label>
-              <span>Auto pump: ON below (soil %)</span>
+              <span>Авто-насос: включить если почва ниже (%)</span>
               <input type="number" step="0.1" min="0" max="100" name="pump_on_below" value="{{ control.pump_on_below }}" />
             </label>
             <label>
-              <span>Auto pump: OFF above (soil %)</span>
+              <span>Авто-насос: выключить если почва выше (%)</span>
               <input type="number" step="0.1" min="0" max="100" name="pump_off_above" value="{{ control.pump_off_above }}" />
             </label>
             <label>
-              <span>Auto pump: max ON (sec)</span>
+              <span>Авто-насос: максимум ВКЛ (сек)</span>
               <input type="number" step="1" min="5" max="3600" name="pump_max_on_sec" value="{{ control.pump_max_on_sec }}" />
             </label>
             <hr />
             <label>
-              <span>Lamp mode (Relay 2)</span>
+              <span>Лампа (Реле 2): режим</span>
               <select name="relay2_mode">
-                <option value="manual" {% if control.relay2_mode == "manual" %}selected{% endif %}>Manual (use the switch below)</option>
-                <option value="auto" {% if control.relay2_mode == "auto" %}selected{% endif %}>Auto (by light sensors)</option>
+                <option value="manual" {% if control.relay2_mode == "manual" %}selected{% endif %}>Ручной (команда ниже)</option>
+                <option value="auto" {% if control.relay2_mode == "auto" %}selected{% endif %}>Авто (по датчикам света)</option>
               </select>
             </label>
             <label>
-              <span>Lamp manual command</span>
+              <span>Лампа (Реле 2): команда (ручной режим)</span>
               <select name="relay2_manual_command">
-                <option value="0" {% if control.relay2_manual_command == 0 %}selected{% endif %}>OFF (0)</option>
-                <option value="1" {% if control.relay2_manual_command == 1 %}selected{% endif %}>ON (1)</option>
+                <option value="0" {% if control.relay2_manual_command == 0 %}selected{% endif %}>ВЫКЛ (0)</option>
+                <option value="1" {% if control.relay2_manual_command == 1 %}selected{% endif %}>ВКЛ (1)</option>
               </select>
             </label>
             <label class="row">
               <input type="checkbox" name="lamp_on_when_dark" value="1" {% if control.lamp_on_when_dark %}checked{% endif %} />
-              <span>Lamp auto: ON when dark (light=0)</span>
+              <span>Авто-лампа: включать когда темно (light=0)</span>
             </label>
-            <button type="submit">Save commands</button>
+            <button type="submit">Сохранить</button>
           </form>
         </article>
 
         <article class="card">
           <h2>ESP Endpoint</h2>
-          <p class="muted">Point your device here:</p>
+          <p class="muted">В прошивке ESP укажи URL:</p>
           <pre>{{ api_url }}</pre>
-          <p class="muted">Server keeps only the latest packet in memory.</p>
+          <p class="muted">Сервер держит только последний пакет (после рестарта всё обнуляется до следующего POST).</p>
           <div class="badge-row">
-            <span id="status-badge" class="badge warn">Offline</span>
+            <span id="status-badge" class="badge warn">Оффлайн</span>
             <span id="status-ago" class="muted">(--) </span>
           </div>
           <div class="muted">
-            <span class="label">Pump cmd</span> <span id="cmd-r1">--</span>
-            <span class="label">Lamp cmd</span> <span id="cmd-r2">--</span>
+            <span class="label">Команда насоса</span> <span id="cmd-r1">--</span>
+            <span class="label">Команда лампы</span> <span id="cmd-r2">--</span>
           </div>
-          <p id="has-packet" class="muted">No packet received yet.</p>
+          <p id="has-packet" class="muted">Пакеты ещё не приходили.</p>
         </article>
       </section>
 
@@ -109,7 +109,11 @@
             <div>
               <strong>Device <span id="v-device-id">{{ last_packet.device_id }}</span></strong>
             </div>
-            <div class="muted" id="received-at">{{ last_received_at }}</div>
+            <div class="muted received">
+              <div><span class="label">Дата</span> <span id="received-date">--</span></div>
+              <div><span class="label">Время</span> <span id="received-time">--</span> <span class="muted small">(Asia/Qyzylorda, UTC+5)</span></div>
+              <div class="muted small"><span class="label">RAW</span> <span id="received-at">{{ last_received_at }}</span></div>
+            </div>
           </div>
 
           <div class="packet-grid">
