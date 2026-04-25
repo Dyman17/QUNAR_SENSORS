@@ -8,6 +8,54 @@ Separate mini-site for Render. This service accepts raw JSON packets from ESP32,
 POST /api/esp
 ```
 
+## Unity endpoints (recommended)
+
+Unity should not depend on raw ESP field names. Use these stable endpoints:
+
+```text
+GET  /api/unity/current
+POST /api/unity/commands
+```
+
+## ESP-CAM video (MJPEG)
+
+This service can store only the latest JPEG frame in memory and expose it as an MJPEG stream for browsers/Unity.
+
+```text
+POST /api/esp-cam/frame
+GET  /api/video/stream.mjpeg
+GET  /api/video/latest.jpg
+GET  /api/video/status
+
+# Unity aliases
+GET  /api/unity/video
+GET  /api/unity/video/stream.mjpeg
+GET  /api/unity/video/latest.jpg
+```
+
+Upload a single JPEG frame (example):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/esp-cam/frame?device_id=cam1" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary "@frame.jpg"
+```
+
+Optional auth: set env var `ESP_CAM_TOKEN`, then send `?token=...` or header `X-ESP-CAM-Token`.
+
+`/api/unity/current` returns:
+
+- `sensors.air.temperature`, `sensors.air.humidity`
+- `sensors.soil.humidity`, `sensors.soil.temperature`
+- `relays.state.relay1/relay2` (если ESP присылает)
+- `relays.command.relay1/relay2` (команды, которые сервер сейчас выдаёт)
+
+`/api/unity/commands` accepts minimal JSON:
+
+```json
+{ "relay1": 0, "relay2": true }
+```
+
 Example packet:
 
 ```json

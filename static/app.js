@@ -2,6 +2,7 @@
   const POLL_MS = 2000;
   const TIME_ZONE = "Asia/Qyzylorda"; // UTC+5
   const LOCALE = "ru-RU";
+  const CAM_ONLINE_SEC = 10;
 
   const byId = (id) => document.getElementById(id);
   const setText = (id, value) => {
@@ -69,6 +70,15 @@
     setText("status-ago", `(${fmtAgo(seconds)})`);
   };
 
+  const setCamStatus = (online, seconds) => {
+    const badge = byId("cam-status-badge");
+    if (!badge) return;
+    badge.textContent = online ? "Video online" : "No video";
+    badge.classList.toggle("ok", Boolean(online));
+    badge.classList.toggle("warn", !online);
+    setText("cam-status-ago", `(${fmtAgo(seconds)})`);
+  };
+
   async function poll() {
     try {
       const res = await fetch("/api/current", { cache: "no-store" });
@@ -130,8 +140,52 @@
     }
   }
 
+  const reloadCam = () => {
+    const img = byId("cam-img");
+    if (!img) return;
+    img.src = `/api/video/stream.mjpeg?t=${Date.now()}`;
+  };
+
+  async function pollVideo() {
+    if (!byId("cam-status-badge")) return;
+
+    try {
+      const res = await fetch("/api/video/status", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const receivedAt = data.last_received_at || null;
+      setText("cam-received-at", fmt(receivedAt));
+      setText("cam-bytes", fmt(data.bytes));
+
+      if (!data.has_frame) {
+        setText("cam-has-frame", "Waiting for the first frame...");
+        setCamStatus(false, null);
+        return;
+      }
+
+      const now = Date.now();
+      const last = receivedAt ? Date.parse(receivedAt) : NaN;
+      const seconds = Number.isFinite(last) ? Math.max(0, Math.floor((now - last) / 1000)) : null;
+      const online = seconds !== null && seconds <= CAM_ONLINE_SEC;
+      setCamStatus(online, seconds);
+      setText("cam-has-frame", "Frames received.");
+    } catch (e) {
+      setCamStatus(false, null);
+      setText("cam-has-frame", "Video status error. Check server logs.");
+    }
+  }
+
   window.addEventListener("load", () => {
     poll();
     setInterval(poll, POLL_MS);
+
+    const reload = byId("cam-reload");
+    if (reload) reload.addEventListener("click", reloadCam);
+    const img = byId("cam-img");
+    if (img) img.addEventListener("error", () => setText("cam-has-frame", "Stream error. Try Reload stream."));
+
+    pollVideo();
+    setInterval(pollVideo, POLL_MS);
   });
 })();

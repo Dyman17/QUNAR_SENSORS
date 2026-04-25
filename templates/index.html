@@ -93,6 +93,28 @@
           </div>
           <p id="has-packet" class="muted">Пакеты ещё не приходили.</p>
         </article>
+
+        <article class="card">
+          <h2>ESP-CAM Video</h2>
+          <p class="muted">
+            View stream: <code>/api/video/stream.mjpeg</code> · Unity: <code>/api/unity/video</code> · Upload frames: <code>POST /api/esp-cam/frame</code>
+          </p>
+          <div class="badge-row">
+            <span id="cam-status-badge" class="badge warn">No video</span>
+            <span id="cam-status-ago" class="muted">(--) </span>
+          </div>
+          <div class="muted small">
+            <span class="label">Last frame</span> <span id="cam-received-at">--</span>
+            <span class="label">Bytes</span> <span id="cam-bytes">--</span>
+          </div>
+          <div class="stream-wrap">
+            <img id="cam-img" class="stream-img" src="/api/video/stream.mjpeg" alt="ESP-CAM stream" />
+          </div>
+          <div class="stream-actions">
+            <button type="button" id="cam-reload">Reload stream</button>
+          </div>
+          <p id="cam-has-frame" class="muted small">Waiting for the first frame...</p>
+        </article>
       </section>
 
       <section class="card">
