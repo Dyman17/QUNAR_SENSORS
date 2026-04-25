@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title or "QUNAR Sensors" }}</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="/dashboard">QUNAR Sensors</a>
+        <nav class="nav">
+          <a class="nav__link {% if page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+          <a class="nav__link {% if page == 'video' %}active{% endif %}" href="/video">Video</a>
+          <a class="nav__link {% if page == 'ai' %}active{% endif %}" href="/ai">AI‑Dos</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page">
+      {% block content %}{% endblock %}
+      <footer class="footer">
+        <div class="muted small">Service keeps latest packet/frame in memory only. Render restarts reset state.</div>
+      </footer>
+    </main>
+  </body>
+</html>
+

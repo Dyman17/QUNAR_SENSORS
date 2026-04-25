@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="eyebrow">ESP32‑CAM</p>
+      <h1>Video Stream</h1>
+      <p class="lead">Поток MJPEG и статус последних кадров.</p>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="card">
+      <h2>ESP‑CAM</h2>
+      <p class="muted small">
+        Stream: <code>/api/video/stream.mjpeg</code> · Latest: <code>/api/video/latest.jpg</code> · Upload: <code>POST /api/esp-cam/frame</code>
+      </p>
+      <div class="badge-row">
+        <span id="cam-status-badge" class="badge warn">No video</span>
+        <span id="cam-status-ago" class="muted">(--) </span>
+      </div>
+      <div class="muted small">
+        <span class="label">Last frame</span> <span id="cam-received-at">--</span>
+        <span class="label">Bytes</span> <span id="cam-bytes">--</span>
+      </div>
+      <div class="stream-wrap">
+        <img id="cam-img" class="stream-img" src="/api/video/stream.mjpeg" alt="ESP-CAM stream" />
+      </div>
+      <div class="stream-actions">
+        <button type="button" id="cam-reload">Reload stream</button>
+        <a class="link" href="/api/video/latest.jpg" target="_blank" rel="noreferrer">Open latest.jpg</a>
+      </div>
+      <p id="cam-has-frame" class="muted small">Waiting for the first frame...</p>
+    </article>
+
+    <article class="card">
+      <h2>Unity</h2>
+      <p class="muted">Для Unity используй:</p>
+      <pre>GET /api/unity/video</pre>
+      <p class="muted small">Это алиас на MJPEG поток. Если нужно просто кадр — <code>/api/unity/video/latest.jpg</code>.</p>
+    </article>
+  </section>
+{% endblock %}
+

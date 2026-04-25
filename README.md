@@ -129,6 +129,14 @@ Open:
 http://127.0.0.1:8000
 ```
 
+## Pages
+
+```text
+/dashboard
+/video
+/ai
+```
+
 ## Render deploy
 
 You can deploy this folder as a separate Render web service.

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="eyebrow">AI‑Dos</p>
+      <h1>Садовник‑помощник</h1>
+      <p class="lead">
+        Я отвечаю только по теме выращивания растений (овощи/фрукты/рассада/почва/полив/свет/удобрения/болезни).
+        Если вопрос не про сад — я откажусь и предложу переформулировать.
+      </p>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="card">
+      <h2>AI Анализ</h2>
+      <p class="muted small">Снимок последних данных + честная оценка по уходу за растениями.</p>
+      <label>
+        <span>AI token (optional)</span>
+        <input id="ai-token" type="password" placeholder="если задан AI_API_TOKEN" />
+      </label>
+      <div class="stream-actions">
+        <button type="button" id="ai-analyze-btn">Запустить анализ</button>
+        <button type="button" id="ai-analyze-clear" class="btn-secondary">Очистить</button>
+      </div>
+      <p id="ai-analyze-status" class="muted small">—</p>
+      <div id="ai-analyze-cards" class="ai-cards" hidden></div>
+      <pre id="ai-analyze-out" class="muted small">{} </pre>
+    </article>
+
+    <article class="card">
+      <h2>AI Чат</h2>
+      <p class="muted small">Удобный чат с историей (в браузере). Нажми “Очистить”, если надо начать заново.</p>
+
+      <div class="chat-toolbar">
+        <button type="button" id="ai-chat-clear" class="btn-secondary">Очистить чат</button>
+        <span id="ai-chat-status" class="muted small">—</span>
+      </div>
+
+      <div id="ai-chat-log" class="chat-log" aria-live="polite"></div>
+
+      <div class="suggest">
+        <button type="button" class="suggest__chip" data-suggest="Что мне делать сегодня по поливу и свету?">Сегодня: полив/свет</button>
+        <button type="button" class="suggest__chip" data-suggest="Как понять, что почва пересушена или залита?">Почва: пересуш/перелив</button>
+        <button type="button" class="suggest__chip" data-suggest="Какие признаки нехватки азота/калия у растений?">Дефицит питания</button>
+      </div>
+
+      <div class="chat-row">
+        <textarea id="ai-chat-input" class="chat-input" rows="3" placeholder="Напиши вопрос по саду... (Enter отправить, Shift+Enter новая строка)"></textarea>
+        <button type="button" id="ai-chat-send">Отправить</button>
+      </div>
+    </article>
+  </section>
+{% endblock %}
+

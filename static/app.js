@@ -3,6 +3,7 @@
   const TIME_ZONE = "Asia/Qyzylorda"; // UTC+5
   const LOCALE = "ru-RU";
   const CAM_ONLINE_SEC = 10;
+  const CHAT_STORE_KEY = "aiDosChatV1";
 
   const byId = (id) => document.getElementById(id);
   const setText = (id, value) => {
@@ -80,6 +81,7 @@
   };
 
   async function poll() {
+    if (!byId("status-badge") && !byId("v-device-id")) return;
     try {
       const res = await fetch("/api/current", { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -193,7 +195,40 @@
     el.disabled = Boolean(busy);
   };
 
+  const readChat = () => {
+    try {
+      const raw = localStorage.getItem(CHAT_STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeChat = (messages) => {
+    try {
+      localStorage.setItem(CHAT_STORE_KEY, JSON.stringify(messages.slice(-40)));
+    } catch {}
+  };
+
+  const renderChat = () => {
+    const log = byId("ai-chat-log");
+    if (!log) return;
+    log.innerHTML = "";
+    const messages = readChat();
+    for (const m of messages) appendChat(m.role, m.content, false);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  const clearChat = () => {
+    try {
+      localStorage.removeItem(CHAT_STORE_KEY);
+    } catch {}
+    renderChat();
+  };
+
   async function runAiAnalyze() {
+    if (!byId("ai-analyze-btn")) return;
     setBusy("ai-analyze-btn", true);
     setText("ai-analyze-status", "Запрос...");
     try {
@@ -205,6 +240,20 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
 
+      const cards = byId("ai-analyze-cards");
+      if (cards) {
+        cards.hidden = false;
+        const a = data.analysis || {};
+        const items = [
+          { k: "Score", v: a.score },
+          { k: "Verdict", v: a.verdict },
+          { k: "Confidence", v: a.confidence },
+        ];
+        cards.innerHTML = items
+          .map((it) => `<div class="ai-card"><div class="ai-card__k">${it.k}</div><div class="ai-card__v">${String(it.v ?? "--")}</div></div>`)
+          .join("");
+      }
+
       const out = byId("ai-analyze-out");
       if (out) out.textContent = JSON.stringify(data, null, 2);
       setText("ai-analyze-status", "Готово.");
@@ -215,7 +264,7 @@
     }
   }
 
-  const appendChat = (role, text) => {
+  const appendChat = (role, text, scroll = true) => {
     const log = byId("ai-chat-log");
     if (!log) return;
 
@@ -231,7 +280,7 @@
     wrap.appendChild(meta);
     wrap.appendChild(bubble);
     log.appendChild(wrap);
-    log.scrollTop = log.scrollHeight;
+    if (scroll) log.scrollTop = log.scrollHeight;
   };
 
   async function sendAiChat() {
@@ -243,6 +292,9 @@
 
     input.value = "";
     appendChat("user", msg);
+    const messages = readChat();
+    messages.push({ role: "user", content: msg });
+    writeChat(messages);
 
     setBusy("ai-chat-send", true);
     setText("ai-chat-status", "Запрос...");
@@ -250,12 +302,14 @@
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...aiHeaders() },
-        body: JSON.stringify({ message: msg }),
+        body: JSON.stringify({ messages }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
 
       appendChat("assistant", data.reply || "");
+      messages.push({ role: "assistant", content: String(data.reply || "") });
+      writeChat(messages);
       setText("ai-chat-status", "Готово.");
     } catch (e) {
       appendChat("assistant", `Ошибка: ${e.message || e}`);
@@ -266,16 +320,20 @@
   }
 
   window.addEventListener("load", () => {
-    poll();
-    setInterval(poll, POLL_MS);
+    if (byId("status-badge") || byId("v-device-id")) {
+      poll();
+      setInterval(poll, POLL_MS);
+    }
 
     const reload = byId("cam-reload");
     if (reload) reload.addEventListener("click", reloadCam);
     const img = byId("cam-img");
     if (img) img.addEventListener("error", () => setText("cam-has-frame", "Stream error. Try Reload stream."));
 
-    pollVideo();
-    setInterval(pollVideo, POLL_MS);
+    if (byId("cam-status-badge")) {
+      pollVideo();
+      setInterval(pollVideo, POLL_MS);
+    }
 
     const tokenEl = byId("ai-token");
     if (tokenEl) {
@@ -292,14 +350,46 @@
     const analyzeBtn = byId("ai-analyze-btn");
     if (analyzeBtn) analyzeBtn.addEventListener("click", runAiAnalyze);
 
+    const analyzeClear = byId("ai-analyze-clear");
+    if (analyzeClear)
+      analyzeClear.addEventListener("click", () => {
+        const out = byId("ai-analyze-out");
+        if (out) out.textContent = "{}";
+        const cards = byId("ai-analyze-cards");
+        if (cards) {
+          cards.hidden = true;
+          cards.innerHTML = "";
+        }
+        setText("ai-analyze-status", "—");
+      });
+
     const sendBtn = byId("ai-chat-send");
     if (sendBtn) sendBtn.addEventListener("click", sendAiChat);
 
     const chatInput = byId("ai-chat-input");
     if (chatInput) {
       chatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") sendAiChat();
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendAiChat();
+        }
       });
     }
+
+    const clearBtn = byId("ai-chat-clear");
+    if (clearBtn) clearBtn.addEventListener("click", clearChat);
+
+    const chips = document.querySelectorAll("[data-suggest]");
+    chips.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-suggest") || "";
+        const el = byId("ai-chat-input");
+        if (!el) return;
+        el.value = val;
+        el.focus();
+      });
+    });
+
+    if (byId("ai-chat-log")) renderChat();
   });
 })();
