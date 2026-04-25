@@ -43,6 +43,26 @@ curl -X POST "http://127.0.0.1:8000/api/esp-cam/frame?device_id=cam1" \
 
 Optional auth: set env var `ESP_CAM_TOKEN`, then send `?token=...` or header `X-ESP-CAM-Token`.
 
+## AI analysis + chat (OpenAI)
+
+Set env vars:
+
+```text
+OPENAI_API_KEY=...
+OPENAI_MODEL=o4               # default in code
+OPENAI_FALLBACK_MODEL=o4-mini # used if primary fails
+AI_API_TOKEN=...              # optional: protect endpoints
+```
+
+Endpoints:
+
+```text
+POST /api/ai/analyze
+POST /api/ai/chat
+```
+
+If `AI_API_TOKEN` is set, send header `X-AI-Token: ...` (or query `?ai_token=...`).
+
 `/api/unity/current` returns:
 
 - `sensors.air.temperature`, `sensors.air.humidity`

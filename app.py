@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -113,6 +114,16 @@ class UnityCommandsPayload(BaseModel):
     relay2_mode: str | None = Field(None, pattern="^(manual|auto)$")
 
 
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(system|user|assistant)$")
+    content: str = Field(..., min_length=1)
+
+
+class AiChatPayload(BaseModel):
+    messages: list[ChatMessage] | None = None
+    message: str | None = None
+
+
 def _parse_iso_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -210,6 +221,10 @@ class ReceiverState:
         self.last_jpeg: bytes | None = None
         self.last_jpeg_at: str | None = None
         self.last_jpeg_device_id: str | None = None
+
+        self.ai_lock = Lock()
+        self.last_ai_analysis: dict[str, Any] | None = None
+        self.last_ai_analysis_at: str | None = None
 
 
 state = ReceiverState()
@@ -450,6 +465,43 @@ def _require_esp_cam_token(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Invalid ESP-CAM token.")
 
 
+def _require_ai_token(request: Request) -> None:
+    expected = os.getenv("AI_API_TOKEN")
+    if not expected:
+        return
+    token = request.headers.get("x-ai-token") or request.query_params.get("ai_token")
+    if not token or token != expected:
+        raise HTTPException(status_code=401, detail="Invalid AI token.")
+
+
+def _get_openai_client():
+    try:
+        from openai import OpenAI
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"OpenAI library missing: {exc}")
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured.")
+    return OpenAI()
+
+
+def _openai_model_id() -> tuple[str, str]:
+    primary = os.getenv("OPENAI_MODEL", "o4")
+    fallback = os.getenv("OPENAI_FALLBACK_MODEL", "o4-mini")
+    return primary, fallback
+
+
+def _response_json(resp) -> dict[str, Any]:
+    text = getattr(resp, "output_text", None)
+    if not text:
+        return {}
+    try:
+        return json.loads(text)
+    except Exception:
+        return {}
+
+
 @app.post("/api/esp-cam/frame")
 async def receive_esp_cam_frame(request: Request):
     """
@@ -492,6 +544,156 @@ async def receive_esp_cam_frame(request: Request):
         state.video_cond.notify_all()
 
     return JSONResponse({"accepted": True, "received_at": received_at, "bytes": len(jpeg)})
+
+
+@app.post("/api/ai/analyze")
+def ai_analyze(request: Request):
+    """
+    Analyze the latest dashboard JSON via OpenAI and return a structured JSON verdict.
+
+    Optional auth:
+      - set env var AI_API_TOKEN and send ?ai_token=... or header X-AI-Token
+    """
+
+    _require_ai_token(request)
+
+    dashboard_state = current_dashboard_state()
+    packet = dashboard_state.get("last_packet")
+    if not packet:
+        raise HTTPException(status_code=404, detail="No ESP packet received yet.")
+
+    video = video_status()
+
+    client = _get_openai_client()
+    model, fallback = _openai_model_id()
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "score": {"type": "integer", "description": "0..100 overall score of system health and data quality."},
+            "verdict": {"type": "string", "description": "Short honest verdict in Russian."},
+            "anomalies": {"type": "array", "items": {"type": "string"}, "description": "Detected anomalies or risks."},
+            "recommendations": {"type": "array", "items": {"type": "string"}, "description": "Concrete next actions."},
+            "confidence": {"type": "number", "description": "0..1 confidence in the assessment."},
+        },
+        "required": ["score", "verdict", "anomalies", "recommendations", "confidence"],
+        "additionalProperties": False,
+    }
+
+    system_msg = (
+        "Ты честный инженер-аналитик IoT/датчиков. "
+        "Оцени качество данных и состояние системы по последнему JSON. "
+        "Не выдумывай факты. Если данных мало — так и скажи. "
+        "Ответ строго в JSON по схеме."
+    )
+
+    input_items = [
+        {"role": "system", "content": system_msg},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "last_received_at": dashboard_state.get("last_received_at"),
+                    "packet": packet,
+                    "computed": dashboard_state.get("last_computed"),
+                    "control": dashboard_state.get("control"),
+                    "video": video,
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+
+    def call(model_id: str):
+        return client.responses.create(
+            model=model_id,
+            input=input_items,
+            text={"format": {"type": "json_schema", "name": "sensor_analysis", "schema": schema, "strict": True}},
+        )
+
+    try:
+        resp = call(model)
+    except Exception:
+        resp = call(fallback)
+        model = fallback
+
+    analysis = _response_json(resp)
+    if not analysis:
+        raise HTTPException(status_code=502, detail="OpenAI returned non-JSON output.")
+
+    received_at = utc_now_iso()
+    with state.ai_lock:
+        state.last_ai_analysis = analysis
+        state.last_ai_analysis_at = received_at
+
+    return {"ok": True, "model": model, "generated_at": received_at, "analysis": analysis}
+
+
+@app.post("/api/ai/chat")
+def ai_chat(payload: AiChatPayload, request: Request):
+    """
+    Chat bot (OpenAI) with current dashboard context.
+
+    Optional auth:
+      - set env var AI_API_TOKEN and send ?ai_token=... or header X-AI-Token
+    """
+
+    _require_ai_token(request)
+
+    dashboard_state = current_dashboard_state()
+    packet = dashboard_state.get("last_packet")
+    video = video_status()
+
+    if payload.messages is None:
+        if not payload.message:
+            raise HTTPException(status_code=400, detail="Provide 'message' or 'messages'.")
+        messages = [ChatMessage(role="user", content=payload.message)]
+    else:
+        messages = payload.messages
+        if not messages:
+            raise HTTPException(status_code=400, detail="Empty messages.")
+
+    client = _get_openai_client()
+    model, fallback = _openai_model_id()
+
+    system_msg = (
+        "Ты помощник для системы QUNAR Sensors. "
+        "Отвечай на русском, кратко и по делу. "
+        "Если спрашивают про датчики/реле/видео — опирайся на текущий JSON состояния. "
+        "Если данных нет — скажи что нет."
+    )
+
+    context = json.dumps(
+        {
+            "last_received_at": dashboard_state.get("last_received_at"),
+            "packet": packet,
+            "computed": dashboard_state.get("last_computed"),
+            "control": dashboard_state.get("control"),
+            "video": video,
+        },
+        ensure_ascii=False,
+    )
+
+    input_items: list[dict[str, Any]] = [
+        {"role": "system", "content": system_msg},
+        {"role": "system", "content": f"Текущее состояние (JSON): {context}"},
+    ]
+    input_items.extend([m.model_dump() for m in messages])
+
+    def call(model_id: str):
+        return client.responses.create(model=model_id, input=input_items)
+
+    try:
+        resp = call(model)
+    except Exception:
+        resp = call(fallback)
+        model = fallback
+
+    reply = getattr(resp, "output_text", "") or ""
+    if not reply.strip():
+        raise HTTPException(status_code=502, detail="OpenAI returned empty output.")
+
+    return {"ok": True, "model": model, "reply": reply}
 
 
 @app.get("/api/video/status")

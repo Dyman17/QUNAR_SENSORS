@@ -150,6 +150,15 @@ pre {
   color: var(--ink);
 }
 
+input[type="text"],
+input[type="password"] {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  background: #fff;
+  color: var(--ink);
+}
+
 .form hr {
   border: none;
   border-top: 1px solid var(--line);
@@ -287,6 +296,50 @@ summary {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.chat-log {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fffdf8;
+  padding: 12px;
+  height: 220px;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.chat-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.chat-bubble {
+  border: 1px solid #e2d0b5;
+  background: #f8f1e4;
+  border-radius: 14px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-bubble.user {
+  background: #e9f4ec;
+  border-color: rgba(47, 125, 76, 0.25);
+}
+
+.chat-bubble.assistant {
+  background: #f8f1e4;
+}
+
+.chat-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
 }
 
 @media (max-width: 920px) {

@@ -176,6 +176,95 @@
     }
   }
 
+  const getAiToken = () => {
+    const el = byId("ai-token");
+    if (!el) return "";
+    return String(el.value || "").trim();
+  };
+
+  const aiHeaders = () => {
+    const token = getAiToken();
+    return token ? { "X-AI-Token": token } : {};
+  };
+
+  const setBusy = (id, busy) => {
+    const el = byId(id);
+    if (!el) return;
+    el.disabled = Boolean(busy);
+  };
+
+  async function runAiAnalyze() {
+    setBusy("ai-analyze-btn", true);
+    setText("ai-analyze-status", "Запрос...");
+    try {
+      const res = await fetch("/api/ai/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...aiHeaders() },
+        body: "{}",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+      const out = byId("ai-analyze-out");
+      if (out) out.textContent = JSON.stringify(data, null, 2);
+      setText("ai-analyze-status", "Готово.");
+    } catch (e) {
+      setText("ai-analyze-status", `Ошибка: ${e.message || e}`);
+    } finally {
+      setBusy("ai-analyze-btn", false);
+    }
+  }
+
+  const appendChat = (role, text) => {
+    const log = byId("ai-chat-log");
+    if (!log) return;
+
+    const wrap = document.createElement("div");
+    const meta = document.createElement("div");
+    meta.className = "chat-meta";
+    meta.textContent = role === "user" ? "Ты" : "AI";
+
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${role}`;
+    bubble.textContent = String(text || "");
+
+    wrap.appendChild(meta);
+    wrap.appendChild(bubble);
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  async function sendAiChat() {
+    const input = byId("ai-chat-input");
+    if (!input) return;
+
+    const msg = String(input.value || "").trim();
+    if (!msg) return;
+
+    input.value = "";
+    appendChat("user", msg);
+
+    setBusy("ai-chat-send", true);
+    setText("ai-chat-status", "Запрос...");
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...aiHeaders() },
+        body: JSON.stringify({ message: msg }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+      appendChat("assistant", data.reply || "");
+      setText("ai-chat-status", "Готово.");
+    } catch (e) {
+      appendChat("assistant", `Ошибка: ${e.message || e}`);
+      setText("ai-chat-status", "Ошибка.");
+    } finally {
+      setBusy("ai-chat-send", false);
+    }
+  }
+
   window.addEventListener("load", () => {
     poll();
     setInterval(poll, POLL_MS);
@@ -187,5 +276,30 @@
 
     pollVideo();
     setInterval(pollVideo, POLL_MS);
+
+    const tokenEl = byId("ai-token");
+    if (tokenEl) {
+      try {
+        tokenEl.value = localStorage.getItem("aiToken") || "";
+      } catch {}
+      tokenEl.addEventListener("input", () => {
+        try {
+          localStorage.setItem("aiToken", tokenEl.value || "");
+        } catch {}
+      });
+    }
+
+    const analyzeBtn = byId("ai-analyze-btn");
+    if (analyzeBtn) analyzeBtn.addEventListener("click", runAiAnalyze);
+
+    const sendBtn = byId("ai-chat-send");
+    if (sendBtn) sendBtn.addEventListener("click", sendAiChat);
+
+    const chatInput = byId("ai-chat-input");
+    if (chatInput) {
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendAiChat();
+      });
+    }
   });
 })();

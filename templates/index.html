@@ -115,6 +115,31 @@
           </div>
           <p id="cam-has-frame" class="muted small">Waiting for the first frame...</p>
         </article>
+
+        <article class="card">
+          <h2>AI Анализ</h2>
+          <p class="muted small">Нажми кнопку — сервер возьмёт последний JSON и отправит в OpenAI.</p>
+          <label>
+            <span>AI token (optional)</span>
+            <input id="ai-token" type="password" placeholder="если задан AI_API_TOKEN" />
+          </label>
+          <div class="stream-actions">
+            <button type="button" id="ai-analyze-btn">Запустить анализ</button>
+          </div>
+          <p id="ai-analyze-status" class="muted small">—</p>
+          <pre id="ai-analyze-out">{} </pre>
+        </article>
+
+        <article class="card">
+          <h2>AI Чат</h2>
+          <p class="muted small">Чат-бот видит текущие данные датчиков/реле/видео.</p>
+          <div id="ai-chat-log" class="chat-log"></div>
+          <div class="chat-row">
+            <input id="ai-chat-input" class="chat-input" type="text" placeholder="Напиши вопрос..." />
+            <button type="button" id="ai-chat-send">Отправить</button>
+          </div>
+          <p id="ai-chat-status" class="muted small">—</p>
+        </article>
       </section>
 
       <section class="card">
