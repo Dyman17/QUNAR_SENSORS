@@ -552,6 +552,50 @@ def unity_current():
     return _unity_current_payload(dashboard_state)
 
 
+@app.get("/api/unity/state")
+def unity_state():
+    """
+    Single JSON endpoint for Unity clients with all current info.
+
+    Includes:
+      - stable Unity-friendly sensors/relays payload
+      - raw dashboard state
+      - video status
+      - latest AI analysis (if available)
+    """
+
+    dashboard_state = current_dashboard_state()
+    unity_payload = _unity_current_payload(dashboard_state)
+    video = video_status()
+
+    with state.ai_lock:
+        ai_analysis = state.last_ai_analysis
+        ai_at = state.last_ai_analysis_at
+
+    payload = {
+        "ok": True,
+        "generated_at": utc_now_iso(),
+        "unity": unity_payload,
+        "dashboard": {
+            "control": dashboard_state.get("control"),
+            "last_received_at": dashboard_state.get("last_received_at"),
+            "packet": dashboard_state.get("last_packet"),
+            "normalized_fields": dashboard_state.get("last_normalized"),
+            "computed": dashboard_state.get("last_computed"),
+        },
+        "video": video,
+        "ai": {"last_generated_at": ai_at, "analysis": ai_analysis},
+    }
+
+    return JSONResponse(
+        payload,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
+
+
 @app.post("/api/unity/commands")
 def unity_commands(payload: UnityCommandsPayload):
     if payload.relay1 is None and payload.relay2 is None and payload.relay1_mode is None and payload.relay2_mode is None:

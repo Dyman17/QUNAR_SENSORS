@@ -14,6 +14,7 @@ Unity should not depend on raw ESP field names. Use these stable endpoints:
 
 ```text
 GET  /api/unity/current
+GET  /api/unity/state
 POST /api/unity/commands
 ```
 
